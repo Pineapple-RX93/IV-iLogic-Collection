@@ -1,0 +1,38 @@
+﻿Public Sub Main()
+Dim oDoc As PartDocument
+Dim oCompDef As ComponentDefinition
+Dim oModelStates As ModelStates
+Dim oModelState As ModelState
+Dim oDataIO As DataIO
+Dim sOut As String
+oDoc = ThisApplication.ActiveDocument
+Logger.Info("FlatOut" & oDoc.DisplayName)
+oCompDef = oDoc.ComponentDefinition
+' Get the DataIO object
+oDataIO= oCompDef.DataIO
+' Build the string that defines the format of the DXF file
+sOut = "FLAT PATTERN DXF?AcadVersion=2000&InvisibleLayers=IV_TANGENT;IV_BEND;IV_BEND_DOWN;IV_ROLL;IV_ROLL_TANGENT&RebaseGeometry=True"
+
+If oCompDef.IsModelStateFactory Then
+	Logger.Info("ModelState in file")
+	oModelStates = oCompDef.ModelStates
+	For Each oModelState In oModelStates
+		oModelState.Activate
+		oCompDef.FlatPattern.Edit
+		Logger.Info(oDoc.DisplayName & " " & oModelState.Name)
+		Logger.Info(iProperties.Value("Project", "Part Number"))
+		' Skip Primary
+		If oModelState.Name <> ThisServer.LanguageTools.CurrentPrimaryModelStateString
+			' Create DXF file
+			oDataIO.WriteDataToFile(sOut, "\\Rfm-svr2\shared\DXF Programming\" + iProperties.Value("Project", "Part Number") + ".dxf")
+		End If
+		oCompDef.FlatPattern.ExitEdit
+	Next
+    oModelStates.Item(1).Activate
+Else
+  Logger.Info("Normal file")
+  Logger.Info(iProperties.Value("Project", "Part Number"))
+  oDataIO.WriteDataToFile(sOut, "\\Rfm-svr2\shared\DXF Programming\"+iProperties.Value("Project", "Part Number")+".dxf")
+End If
+End Sub
+
