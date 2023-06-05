@@ -1,0 +1,41 @@
+﻿Sub Main()
+Dim NewMass As Double
+Dim OldMass As Double
+NewMass = Round(iProperties.Mass, 2) 'Get current Mass, 2 decimal
+Dim NewWidth As Double
+Dim OldWidth As Double
+'NewWidth = Round(SheetMetal.FlatExtentsWidth, 2) 'Get current Flat Width, 2 decimal
+'Dim NewLength As Double
+'Dim OldLength As Double
+'NewLength = Round(SheetMetal.FlatExtentsLength, 2) 'Get current Flat Width, 2 decimal
+'Dim NewArea As Double
+'Dim OldArea As Double
+NewArea = Round(iProperties.Area, 2) 'Get current Area, 2 decimal
+'Logger.Trace("Trace")
+'Logger.Debug("Debug")
+Logger.Info("Mass Running: " & ThisDoc.FileName)
+Logger.Info("File Modifiable: " & ThisDoc.Document.IsModifiable)
+'Logger.Warn("Warn")
+'Logger.Error("Error")
+'Logger.Fatal("Fatal")
+If ThisDoc.Document.IsModifiable 
+	Try
+		OldMass = iProperties.Value("Custom", "Mass") 'Get Old Mass
+	Catch
+		Logger.Info("Mass Property Missing " & NewMass)
+		'iProperties.Value("Custom", "Mass") = NewMass
+	End Try
+	If OldMass <> NewMass Then 'Update if Mass different
+		Logger.Info("Mass Different: Old:" & OldMass)
+		Logger.Info("New: " & NewMass)
+		iProperties.Value("Custom", "Mass") = NewMass
+'		iProperties.Value("Custom", "FlatWidth") = Round(SheetMetal.FlatExtentsWidth, 2)
+'		iProperties.Value("Custom", "FlatLength") = Round(SheetMetal.FlatExtentsLength, 2)
+		iProperties.Value("Custom", "SurfaceArea") = Round(iProperties.Area, 2)
+	End If
+
+
+Else
+	Logger.Info("File Readonly")
+End If
+End Sub

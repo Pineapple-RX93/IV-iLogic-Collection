@@ -1,0 +1,73 @@
+﻿Sub Main()
+'Updated to check all occurrences for ModelState
+'If file (ThisDoc) has ModelState, activate and update each ModelState
+'If it is assembly file without ModelState, activate each ModelState in occurrence with ModelState
+'->If occurrence get dirty (ModelState need upadte), save file
+'Change to don't check dirty, just save
+'Files should be Checked Out if in Vault
+'
+'Start new assembly, save it.  Insert ModelState parts or assemblies
+'Copy rule to assembly and run, or External Rule
+'If ThisDoc.Document.DocumentType = kAssemblyDocumentObject Then
+Dim oDoc As Document
+Dim oCompDef As ComponentDefinition
+Dim oModelStates As ModelStates
+Dim oModelState As ModelState
+Dim oOccu As ComponentOccurrence
+Dim oOccuDef As ComponentDefinition
+Dim oOccuDoc As Document
+
+oDoc = ThisDoc.Document
+Logger.Info("ModelState Update " & oDoc.DisplayName)
+oCompDef = oDoc.ComponentDefinition
+
+If oCompDef.IsModelStateFactory Then
+	'Activate each ModelState and save
+	Logger.Info("ModelState in file")
+	'Activate all model state from ModelStsates object
+	'If ModelState file get dirty after activate, save all files
+	
+	oModelStates = oDoc.ComponentDefinition.ModelStates 
+	For Each oModelState In oModelStates
+		oModelState.Activate
+		Logger.Info(oDoc.DisplayName & " " & oModelState.Name)
+		If oDoc.Dirty Then
+			Logger.Info("Changed ")
+		End If
+		oDoc.Save2
+		'End If
+	Next
+	'Activate Primary
+	oModelStates.Item(1).Activate
+Else If oDoc.DocumentType = kAssemblyDocumentObject Then
+	'Check all components for ModelState
+	For Each oOccu In oCompDef.Occurrences
+		'Get native document ComponentDefinition of occurrence.
+		oOccuDef = oOccu.Definition
+		Logger.Info(oOccuDef.Document.Displayname)
+		oOccuDoc = oOccuDef.Document
+		'Check if oOccuDef has ModelState, skip if not
+		If oOccuDef.IsModelStateMember Then
+			Logger.Info(oOccuDef.Document.Displayname & " Is ModelState Member")
+			'Get ModelStates collection object.
+			oModelStates = oOccuDef.ModelStates
+
+			' Activate all model state from ModelStsates object
+			' If ModelState file get dirty after activate, save all files
+			For Each oModelState In oModelStates
+				oOccu.ActiveModelState = oModelState.Name
+				Logger.Info(oOccuDef.Document.DisplayName & " " & oModelState.Name)
+				If oModelState.Document.Dirty Then
+					Logger.Info("Changed")
+				End If
+				oOccuDoc.Save2
+				oDoc.Save2
+				
+			Next
+			oOccu.ActiveModelState = "[Primary]"
+		End If
+	Next
+Else
+	Logger.Info("Part without Modelstate")
+End If
+End Sub
