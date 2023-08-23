@@ -16,20 +16,33 @@ sOut = "FLAT PATTERN DXF?AcadVersion=2000&InvisibleLayers=IV_TANGENT;IV_BEND;IV_
 If oCompDef.IsModelStateFactory Then
 	Logger.Info("ModelState in file")
 	oModelStates = oCompDef.ModelStates
-	For Each oModelState In oModelStates
-		oModelState.Activate
+	'If active MS is Primary, process all MS
+	'If not, process active MS
+	If oModelStates.ActiveModelState.Name = ThisServer.LanguageTools.CurrentPrimaryModelStateString Then
+		'Create DXF for all MS except Primary
+		For Each oModelState In oModelStates
+			oModelState.Activate
+			' Skip Primary
+			If oModelState.Name <> ThisServer.LanguageTools.CurrentPrimaryModelStateString
+				oCompDef.FlatPattern.Edit
+				Logger.Info(oDoc.DisplayName & " " & oModelState.Name)
+				Logger.Info(iProperties.Value("Project", "Part Number"))
+				' Create DXF file
+				oDataIO.WriteDataToFile(sOut, "\\Rfm-svr2\shared\DXF Programming\" + iProperties.Value("Project", "Part Number") + ".dxf")
+			End If
+			oCompDef.FlatPattern.ExitEdit
+		Next
+	    oModelStates.Item(1).Activate
+	Else
+		'Create DXF for active MS only
 		oCompDef.FlatPattern.Edit
-		Logger.Info(oDoc.DisplayName & " " & oModelState.Name)
+		Logger.Info(oDoc.DisplayName & " " & oModelStates.ActiveModelState.Name)
 		Logger.Info(iProperties.Value("Project", "Part Number"))
-		' Skip Primary
-		If oModelState.Name <> ThisServer.LanguageTools.CurrentPrimaryModelStateString
-			' Create DXF file
-			oDataIO.WriteDataToFile(sOut, "\\Rfm-svr2\shared\DXF Programming\" + iProperties.Value("Project", "Part Number") + ".dxf")
-		End If
+		oDataIO.WriteDataToFile(sOut, "\\Rfm-svr2\shared\DXF Programming\" + iProperties.Value("Project", "Part Number") + ".dxf")
 		oCompDef.FlatPattern.ExitEdit
-	Next
-    oModelStates.Item(1).Activate
+	End If
 Else
+  'Create DXF for non-MS file
   Logger.Info("Normal file")
   Logger.Info(iProperties.Value("Project", "Part Number"))
   oDataIO.WriteDataToFile(sOut, "\\Rfm-svr2\shared\DXF Programming\"+iProperties.Value("Project", "Part Number")+".dxf")
