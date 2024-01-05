@@ -1,0 +1,116 @@
+﻿Option Explicit On
+Option Strict On
+Option Infer Off
+Imports System.IO
+'Create or update all drawings
+'Use current open drawing as template
+'Quick Change and Check out all drawing before running rule
+'Use Part Number as drawing name, add black and white
+'Use MS idw template
+'Save As current drawing to new name, overwrite old file
+'Change ModelState in drawing
+'Save and Close file
+Sub Main()
+
+Dim oDoc As Document
+Dim oPartDoc As PartDocument
+Dim oPartCompDef As PartComponentDefinition
+Dim oAssemDoc As AssemblyDocument
+Dim oAssemCompDef As AssemblyComponentDefinition
+Dim oCompDef As ComponentDefinition
+Dim oModelStates As ModelStates
+Dim oModelState As ModelState
+'Dim oOccu As ComponentOccurrence
+'Dim oOccuDef As ComponentDefinition
+'Dim oOccuDoc As Document
+'Dim oMSDoc As Document
+Dim oFileName As String
+Dim oPathName As String
+Dim oIDWTemplate As String
+Dim oIDWFile As DrawingDocument
+Dim oDrawingView As DrawingView
+Dim oRunCount As Integer
+
+Dim oTestRun As Boolean = False
+
+oDoc = ThisApplication.ActiveDocument
+
+If oDoc.DocumentType = DocumentTypeEnum.kPartDocumentObject Then
+	oPartDoc = TryCast(oDoc, PartDocument)
+	Logger.Info("ModelState Part Drawing Update " & oDoc.DisplayName)
+	oPartCompDef = oPartDoc.ComponentDefinition
+	If oPartCompDef.IsModelStateFactory Then
+		Logger.Info("ModelState in Part")
+		oModelStates = oPartCompDef.ModelStates
+	End If
+Else If oDoc.DocumentType = DocumentTypeEnum.kAssemblyDocumentObject Then
+	oAssemDoc = TryCast(oDoc, AssemblyDocument)
+	Logger.Info("ModelState Assembly Drawing Update " & oDoc.DisplayName)
+	oAssemCompDef = oAssemDoc.ComponentDefinition
+	If oAssemCompDef.IsModelStateFactory Then
+		Logger.Info("ModelState in Assembly")
+		oModelStates = oAssemCompDef.ModelStates
+	End If
+Else
+	Logger.Info("Not Part or Assembly")
+	Exit Sub
+End If
+
+If oTestRun Then
+  oRunCount = 5
+End If
+
+SplitPath(oDoc.FullFileName, oPathName, oFileName)
+For Each oModelState In oModelStates
+	If oModelState.Name <> ThisServer.LanguageTools.CurrentPrimaryModelStateString
+		If oTestRun Then
+			oRunCount = oRunCount - 1
+		End If
+		Logger.Info(oModelState.Name)
+		oModelState.Activate
+		oFileName = oDoc.PropertySets.Item("Design Tracking Properties").Item("Part Number").Value.ToString + ".idw"
+		Logger.Info(oFileName)
+		oIDWTemplate = oDoc.PropertySets.Item("Inventor User Defined Properties").Item("idwTemplate").Value.ToString
+		Logger.Info("Template File: " & oIDWTemplate)
+		If oIDWTemplate = "" Then
+			logger.Info("No Drawing")
+		Else
+			'If Not IO.File.Exists(oPathName + oFileName) Then
+				Logger.Info("Replace All Drawing")
+				oIDWFile = TryCast(ThisApplication.Documents.Open(oPathName + oIDWTemplate, True), DrawingDocument)
+				For Each oDrawingView In oIDWFile.ActiveSheet.DrawingViews
+					oDrawingView.SetActiveModelState(oModelState.Name, True, True)
+				Next
+				oIDWFile.SaveAs(oPathName + oFileName, True)
+				'oIDWFile.Close
+			'Else
+			'	Logger.Info("Old Drawing")
+			'	oIDWFile = TryCast(ThisApplication.Documents.Open(oPathName + oFileName, True), DrawingDocument)
+			'	oIDWFile.Save
+			'	oIDWFile.Close
+			'End If
+		End If
+	End If
+	If oTestRun And (oRunCount = 0) Then
+		Exit For
+	End If
+Next
+
+End Sub
+
+Sub SplitPath(Fullname As String, ByRef Path As String, ByRef Filename As String)
+Dim PathLength As Integer
+Dim PathEnd As Integer
+Dim i As Integer
+    
+i = 1
+PathLength = Len(Fullname)
+While i <= PathLength
+	If Mid(Fullname, i, 1) = "\" Then
+		PathEnd = i
+	End If
+	i = i + 1
+End While
+Path = Left(Fullname, PathEnd)
+Filename = Mid(Fullname, PathEnd + 1, PathLength - PathEnd - 4)
+End Sub
