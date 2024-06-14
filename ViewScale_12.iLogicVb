@@ -1,0 +1,33 @@
+﻿Option Explicit On
+Option Strict On
+Option Infer Off
+Sub Main()
+Dim oDoc As Document
+Dim oIDWFile As DrawingDocument
+Dim oSheet As Sheet
+Dim oDrawingView As DrawingView
+Dim oScale As String
+Dim oTime As String
+
+oTime = Now.ToShortDateString
+iProperties.Value("Project", "Creation Date") = oTime
+
+oScale = "1 / 12"
+oDoc = ThisApplication.ActiveDocument
+oDoc = ThisApplication.ActiveDocument
+If oDoc.DocumentType = DocumentTypeEnum.kDrawingDocumentObject Then
+	oIDWFile = TryCast(oDoc, DrawingDocument)
+	oSheet = oIDWFile.ActiveSheet
+	For Each oDrawingView In oSheet.DrawingViews
+		Logger.Info(oDrawingView.ScaleString)
+		If (oDrawingView.ViewType = DrawingViewTypeEnum.kStandardDrawingViewType) Or
+			(oDrawingView.ViewType = DrawingViewTypeEnum.kProjectedDrawingViewType)
+			'Assignment fail if same scale
+			If oDrawingView.ScaleString <> oScale
+				oDrawingView.ScaleString = oScale
+			End If
+		End If
+	Next
+	oSheet.Update
+End If
+End Sub
